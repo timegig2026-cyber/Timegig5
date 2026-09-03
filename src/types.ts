@@ -27,7 +27,7 @@ export interface Contact {
 
 export type CallStatus = 'idle' | 'outgoing' | 'incoming' | 'connected' | 'ended';
 
-export type BottomTab = 'chats' | 'calls' | 'contacts' | 'settings' | 'notifications' | 'market' | 'admin';
+export type BottomTab = 'chats' | 'calls' | 'contacts' | 'settings' | 'notifications' | 'market' | 'admin' | 'friends';
 
 export interface CallLogItem {
   id: string;
@@ -49,7 +49,8 @@ export interface CallSession {
 export interface AppNotification {
   id: string;
   contactId?: string;
-  type: 'missed_call' | 'message' | 'like' | 'market' | 'security';
+  requesterId?: string;
+  type: 'missed_call' | 'message' | 'like' | 'market' | 'security' | 'friend_request';
   title: string;
   description: string;
   time: string;

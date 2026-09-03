@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircleMore, Bell, Store, User, ShieldAlert } from 'lucide-react';
+import { MessageCircleMore, Bell, Store, User, ShieldAlert, Users } from 'lucide-react';
 import { BottomTab } from '../types';
 
 interface BottomMenuBarProps {
@@ -18,6 +18,7 @@ export const BottomMenuBar: React.FC<BottomMenuBarProps> = ({
   className,
 }) => {
   const isChatActive = activeTab === 'chats';
+  const isFriendsActive = activeTab === 'friends';
   const isNotifActive = activeTab === 'notifications';
   const isMarketActive = activeTab === 'market';
   const isSettingsActive = activeTab === 'settings';
@@ -46,6 +47,23 @@ export const BottomMenuBar: React.FC<BottomMenuBarProps> = ({
           <MessageCircleMore
             className={`w-5 h-5 text-black transition-transform ${
               isChatActive ? 'scale-110 stroke-[2.4px]' : 'stroke-[1.9px] hover:scale-105'
+            }`}
+          />
+        </button>
+
+        {/* Friends Icon */}
+        <button
+          id="bottom-tab-friends"
+          type="button"
+          onClick={() => onSelectTab('friends')}
+          aria-label="Friends"
+          aria-current={isFriendsActive ? 'page' : undefined}
+          title="Friends"
+          className="relative p-2 rounded-full text-black hover:bg-neutral-100/80 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
+        >
+          <Users
+            className={`w-5 h-5 text-black transition-transform ${
+              isFriendsActive ? 'scale-110 stroke-[2.4px]' : 'stroke-[1.9px] hover:scale-105'
             }`}
           />
         </button>

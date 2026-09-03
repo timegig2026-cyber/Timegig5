@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, query, collection, where, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { SignupView } from './components/SignupView';
 import { AnimatePresence, motion } from 'motion/react';
@@ -19,6 +19,7 @@ import { SettingsView } from './components/SettingsView';
 import { AdminView } from './components/AdminView';
 import { NotificationsView } from './components/NotificationsView';
 import { MarketView } from './components/MarketView';
+import { FriendsView } from './components/FriendsView';
 import { BottomMenuBar } from './components/BottomMenuBar';
 import { IncomingCallModal } from './components/IncomingCallModal';
 import { VideoCallModal } from './components/VideoCallModal';
@@ -74,6 +75,25 @@ export default function App() {
     window.addEventListener('timegig_notify' as any, handleNotify);
     return () => window.removeEventListener('timegig_notify' as any, handleNotify);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    // Listen to real-time notifications from Firestore
+    const q = query(collection(db, 'notifications'), where('userId', '==', user.uid));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const dbNotifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AppNotification));
+      setNotifications(prev => {
+        // Merge with local mock notifications for now, or just use DB
+        const merged = [...dbNotifs];
+        prev.forEach(p => {
+          if (!merged.find(m => m.id === p.id)) merged.push(p);
+        });
+        return merged.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+      });
+    });
+    return () => unsub();
+  }, [user]);
+
   const [notifications, setNotifications] = useState<AppNotification[]>([
     {
       id: 'notif-1',
@@ -368,6 +388,43 @@ export default function App() {
     );
   };
 
+  const handleAcceptFriend = async (notif: AppNotification) => {
+    if (!user || !notif.requesterId) return;
+    
+    const friendshipId = [user.uid, notif.requesterId].sort().join('_');
+    try {
+      // Update friendship status
+      await setDoc(doc(db, 'friendships', friendshipId), {
+        status: 'accepted',
+        acceptedAt: serverTimestamp()
+      }, { merge: true });
+
+      // Mark notification as read or delete it
+      await deleteDoc(doc(db, 'notifications', notif.id));
+
+      // Add success notification
+      addNotification({
+        type: 'security',
+        title: 'Friend Request Accepted',
+        description: 'You are now friends! You can now chat and see each other in the Friends tab.',
+      });
+    } catch (err) {
+      console.error("Failed to accept friend request:", err);
+    }
+  };
+
+  const handleDeclineFriend = async (notif: AppNotification) => {
+    if (!user || !notif.requesterId) return;
+    
+    const friendshipId = [user.uid, notif.requesterId].sort().join('_');
+    try {
+      await deleteDoc(doc(db, 'friendships', friendshipId));
+      await deleteDoc(doc(db, 'notifications', notif.id));
+    } catch (err) {
+      console.error("Failed to decline friend request:", err);
+    }
+  };
+
   const handleReportContact = (contactId: string, reason: string, details: string) => {
     console.log(`Report submitted for contact ${contactId}:`, { reason, details });
   };
@@ -490,6 +547,8 @@ export default function App() {
                 onSelectContact={handleSelectContact}
                 onMarkAllRead={() => setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))}
                 onClearAll={() => setNotifications([])}
+                onAcceptFriend={handleAcceptFriend}
+                onDeclineFriend={handleDeclineFriend}
                 onNotificationClick={(notif) => {
                   setNotifications((prev) =>
                     prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
@@ -499,6 +558,8 @@ export default function App() {
                     if (c) handleSelectContact(c);
                   } else if (notif.type === 'market') {
                     setCurrentTab('market');
+                  } else if (notif.type === 'friend_request') {
+                    // Stay on notifications to act on it
                   }
                 }}
               />
@@ -514,15 +575,17 @@ export default function App() {
               />
             )}
 
-            {/* Bottom Menu Bar - shown for tabs other than market */}
-            {currentTab !== 'market' && (
-              <BottomMenuBar
-                activeTab={currentTab}
-                onSelectTab={handleSelectTab}
-                hasUnreadNotifications={notifications.some((n) => !n.isRead)}
-                isAdmin={user?.email?.toLowerCase() === 'timegig2026@gmail.com'}
-              />
+            {currentTab === 'friends' && (
+              <FriendsView onSelectContact={handleSelectContact} />
             )}
+
+            {/* Bottom Menu Bar - always visible */}
+            <BottomMenuBar
+              activeTab={currentTab}
+              onSelectTab={handleSelectTab}
+              hasUnreadNotifications={notifications.some((n) => !n.isRead)}
+              isAdmin={user?.email?.toLowerCase() === 'timegig2026@gmail.com'}
+            />
           </motion.div>
         )}
       </AnimatePresence>

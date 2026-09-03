@@ -8,6 +8,9 @@ import {
   Sparkles,
   Heart,
   Store,
+  UserPlus,
+  Check,
+  X
 } from 'lucide-react';
 import { Contact, AppNotification } from '../types';
 
@@ -18,6 +21,8 @@ interface NotificationsViewProps {
   onMarkAllRead: () => void;
   onClearAll: () => void;
   onNotificationClick: (notif: AppNotification) => void;
+  onAcceptFriend?: (notif: AppNotification) => void;
+  onDeclineFriend?: (notif: AppNotification) => void;
 }
 
 export const NotificationsView: React.FC<NotificationsViewProps> = ({
@@ -27,6 +32,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
   onMarkAllRead,
   onClearAll,
   onNotificationClick,
+  onAcceptFriend,
+  onDeclineFriend,
 }) => {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -85,13 +92,11 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
           </div>
         ) : (
           notifications.map((item) => (
-            <button
+            <div
               key={item.id}
               id={`notification-item-${item.id}`}
-              type="button"
-              onClick={() => onNotificationClick(item)}
               className={`w-full text-left px-6 py-4 flex items-start gap-3.5 transition-colors ${
-                !item.isRead ? 'bg-emerald-50/30 hover:bg-emerald-50/50' : 'hover:bg-neutral-50'
+                !item.isRead ? 'bg-emerald-50/30' : 'hover:bg-neutral-50'
               }`}
             >
               {/* Type Icon */}
@@ -105,6 +110,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                     ? 'bg-pink-100 text-pink-600'
                     : item.type === 'market'
                     ? 'bg-amber-100 text-amber-700'
+                    : item.type === 'friend_request'
+                    ? 'bg-blue-100 text-blue-700'
                     : 'bg-neutral-100 text-neutral-700'
                 }`}
               >
@@ -116,13 +123,15 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                   <Heart className="w-4 h-4 fill-pink-600 text-pink-600" />
                 ) : item.type === 'market' ? (
                   <Store className="w-4 h-4" />
+                ) : item.type === 'friend_request' ? (
+                  <UserPlus className="w-4 h-4" />
                 ) : (
                   <Sparkles className="w-4 h-4" />
                 )}
               </div>
 
               {/* Text content */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0" onClick={() => onNotificationClick(item)}>
                 <div className="flex items-center justify-between gap-2">
                   <p
                     className={`text-sm truncate ${
@@ -138,12 +147,36 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
                 <p className="text-xs text-neutral-600 line-clamp-2 mt-0.5">
                   {item.description}
                 </p>
+
+                {/* Friend Request Actions */}
+                {item.type === 'friend_request' && (
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAcceptFriend?.(item);
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors shadow-sm"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Accept
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeclineFriend?.(item);
+                      }}
+                      className="flex items-center gap-1.5 px-4 py-1.5 bg-neutral-100 text-neutral-600 rounded-lg text-xs font-bold hover:bg-neutral-200 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" /> Decline
+                    </button>
+                  </div>
+                )}
               </div>
 
               {!item.isRead && (
                 <span className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0" />
               )}
-            </button>
+            </div>
           ))
         )}
       </div>
