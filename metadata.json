@@ -1,0 +1,6 @@
+{
+  "name": "Chat Template",
+  "description": "A real-time chat application supporting emojis, full-screen images and videos, message bubble reactions, and live video calling with dual live video streams.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
