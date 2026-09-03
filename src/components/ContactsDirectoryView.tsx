@@ -6,12 +6,16 @@ interface ContactsDirectoryViewProps {
   contacts: Contact[];
   onSelectContact: (contact: Contact) => void;
   onStartVideoCall: (contactId: string) => void;
+  profileImage?: string;
+  onProfileClick?: () => void;
 }
 
 export const ContactsDirectoryView: React.FC<ContactsDirectoryViewProps> = ({
   contacts,
   onSelectContact,
   onStartVideoCall,
+  profileImage,
+  onProfileClick,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -26,9 +30,19 @@ export const ContactsDirectoryView: React.FC<ContactsDirectoryViewProps> = ({
       {/* Header */}
       <header className="px-6 pt-6 pb-4 border-b border-neutral-100 bg-white">
         <div className="flex items-center justify-between mb-3">
-          <h1 id="directory-title" className="text-xl font-bold text-neutral-900 tracking-tight">
-            Contacts
-          </h1>
+          <div className="flex items-center gap-3">
+            {profileImage && (
+              <button 
+                onClick={onProfileClick}
+                className="w-10 h-10 rounded-full overflow-hidden border border-neutral-200 shadow-sm active:scale-95 transition-transform"
+              >
+                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </button>
+            )}
+            <h1 id="directory-title" className="text-xl font-bold text-neutral-900 tracking-tight">
+              Contacts
+            </h1>
+          </div>
           <span className="text-xs font-medium text-neutral-500 bg-neutral-100 px-2.5 py-1 rounded-full">
             {contacts.length} People
           </span>

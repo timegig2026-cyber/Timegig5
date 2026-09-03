@@ -7,6 +7,7 @@ interface BottomMenuBarProps {
   onSelectTab: (tab: BottomTab) => void;
   hasUnreadNotifications?: boolean;
   isAdmin?: boolean;
+  profileImage?: string;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export const BottomMenuBar: React.FC<BottomMenuBarProps> = ({
   onSelectTab,
   hasUnreadNotifications = true,
   isAdmin = false,
+  profileImage,
   className,
 }) => {
   const isChatActive = activeTab === 'chats';
@@ -138,11 +140,17 @@ export const BottomMenuBar: React.FC<BottomMenuBarProps> = ({
           title="Profile"
           className="relative p-2 rounded-full text-black hover:bg-neutral-100/80 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
         >
-          <User
-            className={`w-5 h-5 text-black transition-transform ${
-              isSettingsActive ? 'scale-110 stroke-[2.4px]' : 'stroke-[1.9px] hover:scale-105'
-            }`}
-          />
+          {profileImage ? (
+            <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-all ${isSettingsActive ? 'border-neutral-900 scale-110 shadow-sm' : 'border-transparent'}`}>
+              <img src={profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            </div>
+          ) : (
+            <User
+              className={`w-5 h-5 text-black transition-transform ${
+                isSettingsActive ? 'scale-110 stroke-[2.4px]' : 'stroke-[1.9px] hover:scale-105'
+              }`}
+            />
+          )}
         </button>
       </div>
     </nav>

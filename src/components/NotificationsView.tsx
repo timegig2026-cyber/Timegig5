@@ -23,6 +23,8 @@ interface NotificationsViewProps {
   onNotificationClick: (notif: AppNotification) => void;
   onAcceptFriend?: (notif: AppNotification) => void;
   onDeclineFriend?: (notif: AppNotification) => void;
+  profileImage?: string;
+  onProfileClick?: () => void;
 }
 
 export const NotificationsView: React.FC<NotificationsViewProps> = ({
@@ -34,6 +36,8 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
   onNotificationClick,
   onAcceptFriend,
   onDeclineFriend,
+  profileImage,
+  onProfileClick,
 }) => {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
@@ -42,15 +46,25 @@ export const NotificationsView: React.FC<NotificationsViewProps> = ({
       {/* Header */}
       <header className="px-6 pt-6 pb-4 border-b border-neutral-100 bg-white">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <h1 id="notifications-title" className="text-xl font-bold text-neutral-900 tracking-tight">
-              Notifications
-            </h1>
-            {unreadCount > 0 && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
-                {unreadCount} new
-              </span>
+          <div className="flex items-center gap-3">
+            {profileImage && (
+              <button 
+                onClick={onProfileClick}
+                className="w-10 h-10 rounded-full overflow-hidden border border-neutral-200 shadow-sm active:scale-95 transition-transform"
+              >
+                <img src={profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </button>
             )}
+            <div className="flex items-center gap-2.5">
+              <h1 id="notifications-title" className="text-xl font-bold text-neutral-900 tracking-tight">
+                Notifications
+              </h1>
+              {unreadCount > 0 && (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200">
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

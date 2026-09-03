@@ -28,6 +28,7 @@ import { callAudio } from './utils/callAudio';
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [forceEditProfile, setForceEditProfile] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
@@ -57,9 +58,21 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setIsAuthReady(true);
+      if (!u) setUserProfile(null);
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    // Listen to user profile
+    const unsub = onSnapshot(doc(db, 'profiles', user.uid), (snapshot) => {
+      if (snapshot.exists()) {
+        setUserProfile(snapshot.data());
+      }
+    });
+    return () => unsub();
+  }, [user]);
 
   useEffect(() => {
     if (showSplash) {
@@ -509,6 +522,8 @@ export default function App() {
                 contacts={contacts}
                 onSelectContact={handleSelectContact}
                 onStartVideoCall={handleStartVideoCall}
+                profileImage={userProfile?.profileImage}
+                onProfileClick={() => setCurrentTab('settings')}
               />
             )}
 
@@ -518,6 +533,8 @@ export default function App() {
                 callLogs={callLogs}
                 onStartVideoCall={handleStartVideoCall}
                 onSelectContact={handleSelectContact}
+                profileImage={userProfile?.profileImage}
+                onProfileClick={() => setCurrentTab('settings')}
               />
             )}
 
@@ -526,6 +543,8 @@ export default function App() {
                 contacts={contacts}
                 onSelectContact={handleSelectContact}
                 onStartVideoCall={handleStartVideoCall}
+                profileImage={userProfile?.profileImage}
+                onProfileClick={() => setCurrentTab('settings')}
               />
             )}
 
@@ -549,6 +568,8 @@ export default function App() {
                 onClearAll={() => setNotifications([])}
                 onAcceptFriend={handleAcceptFriend}
                 onDeclineFriend={handleDeclineFriend}
+                profileImage={userProfile?.profileImage}
+                onProfileClick={() => setCurrentTab('settings')}
                 onNotificationClick={(notif) => {
                   setNotifications((prev) =>
                     prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
@@ -572,11 +593,17 @@ export default function App() {
                 onSendMessage={handleSendMessage}
                 onAddNotification={addNotification}
                 onBack={() => setCurrentTab('chats')}
+                profileImage={userProfile?.profileImage}
+                onProfileClick={() => setCurrentTab('settings')}
               />
             )}
 
             {currentTab === 'friends' && (
-              <FriendsView onSelectContact={handleSelectContact} />
+              <FriendsView 
+                onSelectContact={handleSelectContact} 
+                profileImage={userProfile?.profileImage}
+                onProfileClick={() => setCurrentTab('settings')}
+              />
             )}
 
             {/* Bottom Menu Bar - always visible */}
@@ -585,6 +612,7 @@ export default function App() {
               onSelectTab={handleSelectTab}
               hasUnreadNotifications={notifications.some((n) => !n.isRead)}
               isAdmin={user?.email?.toLowerCase() === 'timegig2026@gmail.com'}
+              profileImage={userProfile?.profileImage}
             />
           </motion.div>
         )}

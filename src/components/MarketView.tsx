@@ -258,6 +258,8 @@ interface MarketViewProps {
   onSendMessage?: (contactId: string, content: { text?: string; imageUrl?: string; videoUrl?: string }) => void;
   onAddNotification?: (notif: { type: 'market'; title: string; description: string }) => void;
   onBack?: () => void;
+  profileImage?: string;
+  onProfileClick?: () => void;
 }
 
 export const MarketView: React.FC<MarketViewProps> = ({
@@ -266,6 +268,8 @@ export const MarketView: React.FC<MarketViewProps> = ({
   onSendMessage,
   onAddNotification,
   onBack,
+  profileImage,
+  onProfileClick,
 }) => {
   const [items, setItems] = useState<MarketplaceItem[]>(INITIAL_MARKETPLACE_ITEMS);
   const [search, setSearch] = useState('');
@@ -513,17 +517,27 @@ export const MarketView: React.FC<MarketViewProps> = ({
         <div className="px-4 pt-3 pb-2.5">
           {/* Very Top Bar: Back, Search Bar with Filter inside, & Sell Action */}
           <div className="flex items-center gap-2 mb-2">
-            {onBack && (
-              <button
-                type="button"
-                id="marketplace-back-btn"
-                onClick={onBack}
-                aria-label="Back to previous screen"
-                className="p-1.5 -ml-1 text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 rounded-full transition-colors shrink-0"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {onBack && (
+                <button
+                  type="button"
+                  id="marketplace-back-btn"
+                  onClick={onBack}
+                  aria-label="Back to previous screen"
+                  className="p-1.5 -ml-1 text-neutral-600 hover:text-neutral-950 hover:bg-neutral-100 rounded-full transition-colors shrink-0"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
+              {profileImage && (
+                <button 
+                  onClick={onProfileClick}
+                  className="w-8 h-8 rounded-full overflow-hidden border border-neutral-200 shadow-sm active:scale-95 transition-transform"
+                >
+                  <img src={profileImage} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </button>
+              )}
+            </div>
 
             {/* Search Bar with Search Filter inside */}
             <div className="relative flex-1">
