@@ -27,7 +27,7 @@ export interface Contact {
 
 export type CallStatus = 'idle' | 'outgoing' | 'incoming' | 'connected' | 'ended';
 
-export type BottomTab = 'chats' | 'calls' | 'contacts' | 'settings' | 'notifications' | 'market';
+export type BottomTab = 'chats' | 'calls' | 'contacts' | 'settings' | 'notifications' | 'market' | 'admin';
 
 export interface CallLogItem {
   id: string;

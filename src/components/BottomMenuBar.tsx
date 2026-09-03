@@ -1,11 +1,12 @@
 import React from 'react';
-import { MessageCircleMore, Bell, Store } from 'lucide-react';
+import { MessageCircleMore, Bell, Store, User, ShieldAlert } from 'lucide-react';
 import { BottomTab } from '../types';
 
 interface BottomMenuBarProps {
   activeTab: BottomTab;
   onSelectTab: (tab: BottomTab) => void;
   hasUnreadNotifications?: boolean;
+  isAdmin?: boolean;
   className?: string;
 }
 
@@ -13,11 +14,14 @@ export const BottomMenuBar: React.FC<BottomMenuBarProps> = ({
   activeTab,
   onSelectTab,
   hasUnreadNotifications = true,
+  isAdmin = false,
   className,
 }) => {
   const isChatActive = activeTab === 'chats';
   const isNotifActive = activeTab === 'notifications';
   const isMarketActive = activeTab === 'market';
+  const isSettingsActive = activeTab === 'settings';
+  const isAdminActive = activeTab === 'admin';
 
   return (
     <nav
@@ -84,6 +88,43 @@ export const BottomMenuBar: React.FC<BottomMenuBarProps> = ({
               className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-rose-500 ring-2 ring-white"
             />
           )}
+        </button>
+
+
+        {/* Admin Icon */}
+        {isAdmin && (
+          <button
+            id="bottom-tab-admin"
+            type="button"
+            onClick={() => onSelectTab('admin')}
+            aria-label="Admin"
+            aria-current={isAdminActive ? 'page' : undefined}
+            title="Admin"
+            className="relative p-2 rounded-full text-black hover:bg-neutral-100/80 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
+          >
+            <ShieldAlert
+              className={`w-5 h-5 text-rose-600 transition-transform ${
+                isAdminActive ? 'scale-110 stroke-[2.4px]' : 'stroke-[1.9px] hover:scale-105'
+              }`}
+            />
+          </button>
+        )}
+
+        {/* User / Profile Icon */}
+        <button
+          id="bottom-tab-profile"
+          type="button"
+          onClick={() => onSelectTab('settings')}
+          aria-label="Profile"
+          aria-current={isSettingsActive ? 'page' : undefined}
+          title="Profile"
+          className="relative p-2 rounded-full text-black hover:bg-neutral-100/80 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400"
+        >
+          <User
+            className={`w-5 h-5 text-black transition-transform ${
+              isSettingsActive ? 'scale-110 stroke-[2.4px]' : 'stroke-[1.9px] hover:scale-105'
+            }`}
+          />
         </button>
       </div>
     </nav>

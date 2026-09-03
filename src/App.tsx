@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, db } from './firebase';
+import { SignupView } from './components/SignupView';
 import { AnimatePresence, motion } from 'motion/react';
 import { Contact, Message, CallSession, BottomTab, CallLogItem, AppNotification } from './types';
 import { INITIAL_CONTACTS, INITIAL_CALL_LOGS } from './data/mockContacts';
@@ -12,6 +16,7 @@ import { ChatConversation } from './components/ChatConversation';
 import { CallsView } from './components/CallsView';
 import { ContactsDirectoryView } from './components/ContactsDirectoryView';
 import { SettingsView } from './components/SettingsView';
+import { AdminView } from './components/AdminView';
 import { NotificationsView } from './components/NotificationsView';
 import { MarketView } from './components/MarketView';
 import { BottomMenuBar } from './components/BottomMenuBar';
@@ -20,11 +25,55 @@ import { VideoCallModal } from './components/VideoCallModal';
 import { callAudio } from './utils/callAudio';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [forceEditProfile, setForceEditProfile] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>(INITIAL_CONTACTS);
   const [callLogs, setCallLogs] = useState<CallLogItem[]>(INITIAL_CALL_LOGS);
   const [currentTab, setCurrentTab] = useState<BottomTab>('chats');
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [activeCall, setActiveCall] = useState<CallSession | null>(null);
+
+  // Global wallpaper settings
+  const [wallpaperSettings, setWallpaperSettings] = useState({ wallpaperUrl: '', blurAmount: 0 });
+
+  useEffect(() => {
+    // Listen to global config for wallpaper
+    const unsub = onSnapshot(doc(db, 'configs', 'global'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        setWallpaperSettings({
+          wallpaperUrl: data.wallpaperUrl || '',
+          blurAmount: data.blurAmount || 0
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setIsAuthReady(true);
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (showSplash) {
+      const timer = setTimeout(() => setShowSplash(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSplash]);
+
+  useEffect(() => {
+    const handleNotify = (e: CustomEvent) => {
+      addNotification(e.detail);
+    };
+    window.addEventListener('timegig_notify' as any, handleNotify);
+    return () => window.removeEventListener('timegig_notify' as any, handleNotify);
+  }, []);
   const [notifications, setNotifications] = useState<AppNotification[]>([
     {
       id: 'notif-1',
@@ -323,10 +372,47 @@ export default function App() {
     console.log(`Report submitted for contact ${contactId}:`, { reason, details });
   };
 
+  if (!isAuthReady) return <div className="h-screen w-full bg-neutral-900 flex items-center justify-center"><div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div></div>;
+
+  if (!user && !showSplash) {
+    return <SignupView 
+      onSuccess={() => {
+        setForceEditProfile(true);
+        setCurrentTab('settings');
+      }} 
+    />;
+  }
+
   return (
-    <div id="app-root" className="relative h-screen w-full bg-white flex flex-col overflow-hidden">
+    <div id="app-root" className={`relative h-screen w-full flex flex-col overflow-hidden transition-colors duration-500 ${wallpaperSettings.wallpaperUrl ? 'bg-transparent' : 'bg-white'}`}>
+      {/* Global Background Layer */}
+      {wallpaperSettings.wallpaperUrl && (
+        <div 
+          className="fixed inset-0 z-0 pointer-events-none transition-all duration-700 ease-in-out"
+          style={{
+            backgroundImage: `url(${wallpaperSettings.wallpaperUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: `blur(${wallpaperSettings.blurAmount}px)`,
+            opacity: 1
+          }}
+        />
+      )}
+      
       <AnimatePresence mode="wait">
-        {selectedContact ? (
+        {showSplash ? (
+          <motion.div
+            key="splash-screen"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className={`flex-1 flex flex-col items-center justify-center z-50 ${wallpaperSettings.wallpaperUrl ? 'bg-white/80 backdrop-blur-sm' : 'bg-white'}`}
+          >
+            <h1 className="text-5xl font-black tracking-tight text-neutral-900 mb-2">TimeGiG</h1>
+            <p className="text-neutral-500 font-medium tracking-wide">Connect • Market • Thrive</p>
+          </motion.div>
+        ) : selectedContact ? (
           /* Active Chat Conversation with Selected Contact & Bottom Input Box */
           <motion.div
             key={`conversation-${selectedContact.id}`}
@@ -335,7 +421,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.15 }}
-            className="flex-1 h-full w-full flex flex-col bg-white overflow-hidden"
+            className={`flex-1 h-full w-full flex flex-col overflow-hidden ${wallpaperSettings.wallpaperUrl ? 'bg-white/90 backdrop-blur-md' : 'bg-white'}`}
           >
             <ChatConversation
               contact={selectedContact}
@@ -359,7 +445,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
-            className="flex-1 h-full w-full flex flex-col bg-white overflow-hidden"
+            className={`flex-1 h-full w-full flex flex-col overflow-hidden ${wallpaperSettings.wallpaperUrl ? 'bg-white/80 backdrop-blur-sm' : 'bg-white'}`}
           >
             {currentTab === 'chats' && (
               <ContactsList
@@ -386,8 +472,15 @@ export default function App() {
               />
             )}
 
+
             {currentTab === 'settings' && (
-              <SettingsView />
+              <SettingsView forceEditProfile={forceEditProfile} onProfileDone={() => {
+                setForceEditProfile(false);
+                setCurrentTab('market');
+              }} />
+            )}
+            {currentTab === 'admin' && user?.email?.toLowerCase() === 'timegig2026@gmail.com' && (
+              <AdminView />
             )}
 
             {currentTab === 'notifications' && (
@@ -427,6 +520,7 @@ export default function App() {
                 activeTab={currentTab}
                 onSelectTab={handleSelectTab}
                 hasUnreadNotifications={notifications.some((n) => !n.isRead)}
+                isAdmin={user?.email?.toLowerCase() === 'timegig2026@gmail.com'}
               />
             )}
           </motion.div>

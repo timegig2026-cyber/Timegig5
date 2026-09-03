@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "Agreement": {
+      "title": "Agreement",
+      "description": "A signed terms and conditions agreement by a user.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who signed."
+        },
+        "userEmail": {
+          "type": "string"
+        },
+        "acceptedAt": {
+          "type": "timestamp",
+          "description": "Server timestamp when signed."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["signed", "approved", "rejected"]
+        }
+      },
+      "required": ["userId", "userEmail", "acceptedAt", "status"]
+    }
+  },
+  "firestore": {
+    "/agreements/{agreementId}": {
+      "schema": { "$ref": "#/entities/Agreement" },
+      "description": "Stores user agreements."
+    }
+  }
+}

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import {
   Search,
   MapPin,
@@ -16,6 +18,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Trash2,
+  FileText,
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 import { Contact } from '../types';
 
@@ -276,6 +281,52 @@ export const MarketView: React.FC<MarketViewProps> = ({
   // Quick message input for item detail
   const [messageText, setMessageText] = useState('Hi, is this still available?');
   const [messageSent, setMessageSent] = useState(false);
+  
+  // Seller Agreement State
+  const [hasSignedSellerAgreement, setHasSignedSellerAgreement] = useState<boolean | null>(null);
+  const [isSellerAgreementModalOpen, setIsSellerAgreementModalOpen] = useState(false);
+  const [isSigningAgreement, setIsSigningAgreement] = useState(false);
+  const [agreementChecked, setAgreementChecked] = useState(false);
+
+  useEffect(() => {
+    const checkAgreement = async () => {
+      if (auth.currentUser) {
+        const docRef = doc(db, 'sellerAgreements', auth.currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        setHasSignedSellerAgreement(docSnap.exists());
+      }
+    };
+    checkAgreement();
+  }, []);
+
+  const handleSellClick = () => {
+    if (hasSignedSellerAgreement === true) {
+      setIsSellModalOpen(true);
+    } else {
+      setIsSellerAgreementModalOpen(true);
+    }
+  };
+
+  const signSellerAgreement = async () => {
+    if (!auth.currentUser || !agreementChecked) return;
+    setIsSigningAgreement(true);
+    try {
+      await setDoc(doc(db, 'sellerAgreements', auth.currentUser.uid), {
+        userId: auth.currentUser.uid,
+        userEmail: auth.currentUser.email,
+        signedAt: serverTimestamp(),
+        status: 'signed',
+        agreementType: 'seller_marketplace'
+      });
+      setHasSignedSellerAgreement(true);
+      setIsSellerAgreementModalOpen(false);
+      setIsSellModalOpen(true);
+    } catch (err) {
+      console.error("Failed to sign agreement:", err);
+    } finally {
+      setIsSigningAgreement(false);
+    }
+  };
 
   // Sell Modal state
   const [isSellModalOpen, setIsSellModalOpen] = useState(false);
@@ -540,7 +591,7 @@ export const MarketView: React.FC<MarketViewProps> = ({
             <button
               type="button"
               id="marketplace-sell-btn"
-              onClick={() => setIsSellModalOpen(true)}
+              onClick={handleSellClick}
               className="flex items-center gap-1 px-3 py-2 rounded-full bg-neutral-950 hover:bg-neutral-800 text-white text-xs font-bold transition-colors shadow-xs shrink-0"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
@@ -661,9 +712,78 @@ export const MarketView: React.FC<MarketViewProps> = ({
 
 
 
-      {/* =========================================================
-          ITEM DETAIL MODAL (Opens when tapping any Logo)
-      ========================================================== */}
+      {/* Seller Agreement Modal */}
+      {isSellerAgreementModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-neutral-900">Seller Agreement</h3>
+              </div>
+              <button 
+                onClick={() => setIsSellerAgreementModalOpen(false)}
+                className="p-1.5 hover:bg-neutral-100 rounded-full text-neutral-400 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="bg-neutral-50 rounded-2xl p-5 mb-6 border border-neutral-100 max-h-[300px] overflow-y-auto">
+                <h4 className="font-bold text-sm text-neutral-900 mb-3">Terms of Service for Sellers</h4>
+                <div className="space-y-3 text-xs text-neutral-600 leading-relaxed">
+                  <p>By listing items on the TimeGiG Marketplace, you agree to the following:</p>
+                  <ul className="list-disc pl-4 space-y-2">
+                    <li>All items listed must be accurately described and represent their true condition.</li>
+                    <li>You are responsible for all transactions and communications with buyers.</li>
+                    <li>Prohibited items (illegal goods, weapons, drugs, etc.) are strictly forbidden.</li>
+                    <li>TimeGiG is a platform for connection and is not responsible for any disputes between users.</li>
+                    <li>You agree to conduct all business with integrity and respect for other community members.</li>
+                    <li>We reserve the right to remove any listing or suspend seller privileges for violations.</li>
+                  </ul>
+                  <p className="pt-2 italic">Your digital signature below confirms your acceptance of these terms.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 mb-6 bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100">
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={agreementChecked}
+                    onChange={(e) => setAgreementChecked(e.target.checked)}
+                  />
+                  <div className="w-5 h-5 border-2 border-neutral-300 rounded bg-white peer-checked:bg-emerald-500 peer-checked:border-emerald-500 flex items-center justify-center transition-colors">
+                    <Check className={`w-3.5 h-3.5 text-white ${agreementChecked ? 'opacity-100' : 'opacity-0'}`} />
+                  </div>
+                </label>
+                <p className="text-xs font-semibold text-neutral-700 leading-tight">
+                  I have read, understood and agree to the Seller Terms of Service and Privacy Policy.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsSellerAgreementModalOpen(false)}
+                  className="flex-1 py-3 px-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold rounded-xl text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={!agreementChecked || isSigningAgreement}
+                  onClick={signSellerAgreement}
+                  className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-all shadow-md shadow-emerald-900/10 disabled:opacity-50 disabled:shadow-none"
+                >
+                  {isSigningAgreement ? 'Signing...' : 'Sign & Continue'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {activeItem && (
         <div
           id="item-detail-backdrop"

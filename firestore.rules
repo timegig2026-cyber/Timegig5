@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && request.auth.token.email == 'timegig2026@gmail.com'; } // Or an admin check
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Validation for Agreement
+    function isValidAgreement(data) {
+      return data.keys().hasAll(['userId', 'userEmail', 'acceptedAt', 'status'])
+        && data.keys().size() == 4
+        && data.userId is string && data.userId.size() <= 128 && data.userId == request.auth.uid
+        && data.userEmail is string && data.userEmail.size() <= 256
+        && data.acceptedAt == request.time
+        && data.status is string && data.status in ['signed', 'approved', 'rejected'];
+    }
+
+    match /agreements/{agreementId} {
+      allow read: if isAdmin() || (isSignedIn() && existing().userId == request.auth.uid);
+      allow create: if isSignedIn() 
+                    && isValidId(agreementId) 
+                    && isValidAgreement(incoming())
+                    && agreementId == request.auth.uid; // ID is UID
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Profiles rules
+    match /profiles/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && userId == request.auth.uid;
+    }
+
+    // Configs rules (Global settings like wallpaper)
+    match /configs/{configId} {
+      allow read: if true; // Everyone can read wallpaper settings
+      allow write: if isAdmin();
+    }
+
+    // Seller Agreements rules
+    match /sellerAgreements/{userId} {
+      allow read: if isAdmin() || (isSignedIn() && userId == request.auth.uid);
+      allow create: if isSignedIn() && userId == request.auth.uid;
+      allow update: if isAdmin();
+    }
+  }
+}
